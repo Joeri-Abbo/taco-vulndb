@@ -3,7 +3,7 @@ module github.com/Joeri-Abbo/taco-vulndb
 go 1.25.7
 
 require (
-	github.com/Joeri-Abbo/taco-lib v0.0.7
+	github.com/Joeri-Abbo/taco-lib v0.0.8
 	github.com/spf13/cobra v1.10.2
 )
 
