@@ -1,10 +1,22 @@
 {
-  "last_updated": "2026-03-29T11:17:24.314703858Z",
-  "entry_count": 0,
+  "last_updated": "2026-03-29T11:20:52.307524369Z",
+  "entry_count": 64234,
   "sources": {
+    "alpine-secdb": {
+      "last_updated": "2026-03-29T11:20:52.307799975Z",
+      "entry_count": 10060
+    },
     "cisa-kev": {
-      "last_updated": "2026-03-29T11:17:24.31481781Z",
+      "last_updated": "2026-03-29T11:20:52.307800576Z",
       "entry_count": 1554
+    },
+    "debian": {
+      "last_updated": "2026-03-29T11:20:52.307797912Z",
+      "entry_count": 52635
+    },
+    "nvd": {
+      "last_updated": "2026-03-29T11:20:52.307800325Z",
+      "entry_count": 1539
     }
   }
 }
