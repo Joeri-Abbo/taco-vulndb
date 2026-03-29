@@ -16,7 +16,7 @@ clean:
 	rm -rf bin/ coverage.out
 
 docker:
-	docker build -f taco-vulndb/Dockerfile -t taco-vulndb:latest ..
+	docker build -t taco-vulndb:latest .
 
 docker-vulndb:
-	docker build -f taco-vulndb/Dockerfile.vulndb -t taco-vulndb-image:latest ..
+	docker build -f Dockerfile.vulndb -t taco-vulndb-image:latest .

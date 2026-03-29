@@ -3,16 +3,10 @@ FROM golang:1.26-alpine AS builder
 RUN apk add --no-cache git
 
 WORKDIR /src
-
-# Copy taco-lib module (needed by replace directive in go.mod)
-COPY taco-lib/ /src/taco-lib/
-
-# Copy taco-vulndb module
-COPY taco-vulndb/go.mod taco-vulndb/go.sum /src/taco-vulndb/
-WORKDIR /src/taco-vulndb
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY taco-vulndb/ /src/taco-vulndb/
+COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/taco-vulndb ./cmd/taco-vulndb
 
 FROM alpine:3.23

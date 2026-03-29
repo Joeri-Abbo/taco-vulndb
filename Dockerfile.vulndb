@@ -1,12 +1,12 @@
 # Dockerfile.vulndb — builds a container that holds a pre-built vulnerability database.
 #
-# Build from the parent (taco/) directory:
-#   docker build -f taco-vulndb/Dockerfile.vulndb -t ghcr.io/jabbo/taco-vulndb:latest .
+# Usage:
+#   docker build -f Dockerfile.vulndb -t ghcr.io/joeri-abbo/taco-vulndb:latest .
 #
 #   # Build incrementally from a previous image:
-#   docker build -f taco-vulndb/Dockerfile.vulndb \
-#     --build-arg PREV_DB_IMAGE=ghcr.io/jabbo/taco-vulndb:latest \
-#     -t ghcr.io/jabbo/taco-vulndb:$(date +%Y-%m-%d) .
+#   docker build -f Dockerfile.vulndb \
+#     --build-arg PREV_DB_IMAGE=ghcr.io/joeri-abbo/taco-vulndb:latest \
+#     -t ghcr.io/joeri-abbo/taco-vulndb:$(date +%Y-%m-%d) .
 
 # ---------- stage 1: build binary ----------
 FROM golang:1.26-alpine AS builder
@@ -14,16 +14,10 @@ FROM golang:1.26-alpine AS builder
 RUN apk add --no-cache git
 
 WORKDIR /src
-
-# Copy taco-lib module (dependency via replace directive)
-COPY taco-lib/ /src/taco-lib/
-
-# Copy taco-vulndb module
-COPY taco-vulndb/go.mod taco-vulndb/go.sum /src/taco-vulndb/
-WORKDIR /src/taco-vulndb
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY taco-vulndb/ /src/taco-vulndb/
+COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/taco-vulndb ./cmd/taco-vulndb
 
 # ---------- stage 2: optionally pull previous DB ----------
