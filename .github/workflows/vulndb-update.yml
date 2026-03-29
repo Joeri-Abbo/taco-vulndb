@@ -20,7 +20,7 @@ on:
         default: ''
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
@@ -82,18 +82,6 @@ jobs:
         run: |
           ./bin/taco-vulndb push "$VULNDB_OCI_REF:$DATE_TAG"
           ./bin/taco-vulndb push "$VULNDB_OCI_REF:latest"
-
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add vulndb/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: update vulnerability database $DATE_TAG"
-            git push
-          fi
 
       - name: Upload DB as artifact
         uses: actions/upload-artifact@v7
