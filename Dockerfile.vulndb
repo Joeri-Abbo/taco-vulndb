@@ -31,16 +31,19 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /bin/taco-vulndb /usr/local/bin/taco-vulndb
 
-RUN mkdir -p /root/.taco/db
-COPY --from=prev-db /vulndb/vulndb.json /root/.taco/db/vulndb.json
-COPY --from=prev-db /vulndb/meta.json   /root/.taco/db/meta.json
+RUN --mount=from=prev-db,target=/prev \
+    mkdir -p /root/.taco/db && \
+    if [ -f /prev/vulndb/vulndb.json ]; then \
+      cp /prev/vulndb/vulndb.json /root/.taco/db/vulndb.json; \
+      cp /prev/vulndb/meta.json   /root/.taco/db/meta.json;   \
+    fi
 
-ARG TACO_NVD_API_KEY=""
-ARG GITHUB_TOKEN=""
 ARG TACO_SOURCES=""
-ENV TACO_NVD_API_KEY=${TACO_NVD_API_KEY}
-ENV GITHUB_TOKEN=${GITHUB_TOKEN}
-RUN if [ -n "$TACO_SOURCES" ]; then \
+RUN --mount=type=secret,id=NVD_API_KEY \
+    --mount=type=secret,id=GITHUB_TOKEN \
+    export TACO_NVD_API_KEY="$(cat /run/secrets/NVD_API_KEY 2>/dev/null || true)" && \
+    export GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN 2>/dev/null || true)" && \
+    if [ -n "$TACO_SOURCES" ]; then \
       taco-vulndb update --sources "$TACO_SOURCES"; \
     else \
       taco-vulndb update; \

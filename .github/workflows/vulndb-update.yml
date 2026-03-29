@@ -130,7 +130,8 @@ jobs:
           push: true
           build-args: |
             PREV_DB_IMAGE=${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
-            TACO_NVD_API_KEY=${{ secrets.NVD_API_KEY }}
+          secrets: |
+            NVD_API_KEY=${{ secrets.NVD_API_KEY }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
