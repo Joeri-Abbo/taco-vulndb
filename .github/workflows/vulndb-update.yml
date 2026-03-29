@@ -1,6 +1,10 @@
 name: VulnDB Update
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vulndb-update.yml'
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
