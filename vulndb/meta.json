@@ -1,30 +1,18 @@
 {
-  "last_updated": "2026-03-29T11:22:53.757249566Z",
+  "last_updated": "2026-03-29T11:26:54.928095374Z",
   "entry_count": 64234,
   "sources": {
-    "alas": {
-      "last_updated": "2026-03-29T11:22:53.757453846Z",
-      "entry_count": 0
-    },
     "alpine-secdb": {
-      "last_updated": "2026-03-29T11:22:53.757453926Z",
+      "last_updated": "2026-03-29T11:26:54.928293803Z",
       "entry_count": 10060
     },
-    "cisa-kev": {
-      "last_updated": "2026-03-29T11:22:53.757453646Z",
-      "entry_count": 1554
-    },
     "debian": {
-      "last_updated": "2026-03-29T11:22:53.757454107Z",
+      "last_updated": "2026-03-29T11:26:54.928292481Z",
       "entry_count": 58095
     },
-    "ghsa": {
-      "last_updated": "2026-03-29T11:22:53.757451922Z",
-      "entry_count": 0
-    },
     "nvd": {
-      "last_updated": "2026-03-29T11:22:53.757454277Z",
-      "entry_count": 1679
+      "last_updated": "2026-03-29T11:26:54.928294004Z",
+      "entry_count": 1539
     }
   }
 }
