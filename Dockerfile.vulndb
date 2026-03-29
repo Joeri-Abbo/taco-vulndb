@@ -1,64 +1,14 @@
-# Dockerfile.vulndb — builds a container that holds a pre-built vulnerability database.
+# Dockerfile.vulndb — packages a pre-built vulnerability database into a minimal image.
+#
+# Expects the vulndb/ directory (with vulndb.json, meta.json, vulndb.json.gz)
+# to be present in the build context. The build-db job produces these files.
 #
 # Usage:
 #   docker build -f Dockerfile.vulndb -t ghcr.io/joeri-abbo/taco-vulndb:latest .
-#
-#   # Build incrementally from a previous image:
-#   docker build -f Dockerfile.vulndb \
-#     --build-arg PREV_DB_IMAGE=ghcr.io/joeri-abbo/taco-vulndb:latest \
-#     -t ghcr.io/joeri-abbo/taco-vulndb:$(date +%Y-%m-%d) .
 
-# ---------- stage 1: build binary ----------
-FROM golang:1.26-alpine AS builder
-
-RUN apk add --no-cache git
-
-WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . .
-RUN CGO_ENABLED=0 go build -o /bin/taco-vulndb ./cmd/taco-vulndb
-
-# ---------- stage 2: optionally pull previous DB ----------
-ARG PREV_DB_IMAGE=""
-FROM ${PREV_DB_IMAGE:-alpine:3.20} AS prev-db
-
-# ---------- stage 3: fetch and build the DB ----------
-FROM alpine:3.23 AS fetcher
-
-RUN apk add --no-cache ca-certificates
-
-COPY --from=builder /bin/taco-vulndb /usr/local/bin/taco-vulndb
-
-RUN --mount=from=prev-db,target=/prev \
-    mkdir -p /root/.taco/db && \
-    if [ -f /prev/vulndb/vulndb.json ]; then \
-      cp /prev/vulndb/vulndb.json /root/.taco/db/vulndb.json; \
-      cp /prev/vulndb/meta.json   /root/.taco/db/meta.json;   \
-    fi
-
-ARG TACO_SOURCES=""
-RUN --mount=type=secret,id=NVD_API_KEY \
-    --mount=type=secret,id=GITHUB_TOKEN \
-    export TACO_NVD_API_KEY="$(cat /run/secrets/NVD_API_KEY 2>/dev/null || true)" && \
-    export GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN 2>/dev/null || true)" && \
-    if [ -n "$TACO_SOURCES" ]; then \
-      taco-vulndb update --sources "$TACO_SOURCES"; \
-    else \
-      taco-vulndb update; \
-    fi
-
-RUN mkdir -p /vulndb && \
-    cp /root/.taco/db/vulndb.json /vulndb/vulndb.json && \
-    cp /root/.taco/db/meta.json   /vulndb/meta.json && \
-    taco-vulndb export --output /vulndb/vulndb.json.gz && \
-    taco-vulndb status
-
-# ---------- stage 4: minimal output image ----------
 FROM scratch
 
-COPY --from=fetcher /vulndb/ /vulndb/
+COPY vulndb/ /vulndb/
 
 LABEL org.opencontainers.image.title="TACO VulnDB" \
       org.opencontainers.image.description="Pre-built vulnerability database for TACO scanner" \

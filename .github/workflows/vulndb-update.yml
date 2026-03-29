@@ -99,9 +99,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: vulndb-${{ env.DATE_TAG }}
-          path: |
-            vulndb/vulndb.json.gz
-            vulndb/meta.json
+          path: vulndb/
           retention-days: 30
 
   build-container:
@@ -114,6 +112,12 @@ jobs:
         run: |
           echo "DATE_TAG=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
           echo "VULNDB_OCI_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Download DB artifacts from build-db
+        uses: actions/download-artifact@v7
+        with:
+          name: vulndb-${{ env.DATE_TAG }}
+          path: vulndb/
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -128,11 +132,6 @@ jobs:
           context: .
           file: Dockerfile.vulndb
           push: true
-          build-args: |
-            PREV_DB_IMAGE=${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
-          secrets: |
-            NVD_API_KEY=${{ secrets.NVD_API_KEY }}
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
             ${{ env.VULNDB_OCI_REF }}/vulndb-container:${{ env.DATE_TAG }}
