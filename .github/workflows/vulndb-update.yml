@@ -1,0 +1,133 @@
+name: VulnDB Update
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Force full historical fetch (not incremental)'
+        required: false
+        default: 'false'
+        type: boolean
+      sources:
+        description: 'Comma-separated sources to fetch (default: all)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+
+      - name: Set tags
+        run: |
+          echo "DATE_TAG=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+          echo "VULNDB_OCI_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/vulndb" >> "$GITHUB_ENV"
+
+      - name: Build taco-vulndb
+        run: go build -o bin/taco-vulndb ./cmd/taco-vulndb
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull previous database from OCI registry
+        id: pull-prev
+        continue-on-error: true
+        run: |
+          ./bin/taco-vulndb pull "$VULNDB_OCI_REF:latest"
+          ./bin/taco-vulndb status
+          echo "pulled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Update vulnerability database
+        env:
+          TACO_NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.full }}" = "true" ] || [ "${{ steps.pull-prev.outputs.pulled }}" != "true" ]; then
+            ARGS="$ARGS --full"
+          fi
+          if [ -n "${{ inputs.sources }}" ]; then
+            ARGS="$ARGS --sources ${{ inputs.sources }}"
+          fi
+          ./bin/taco-vulndb update $ARGS
+          ./bin/taco-vulndb status
+
+      - name: Export database files
+        run: |
+          mkdir -p vulndb
+          cp ~/.taco/db/vulndb.json vulndb/vulndb.json
+          cp ~/.taco/db/meta.json   vulndb/meta.json
+          ./bin/taco-vulndb export --output vulndb/vulndb.json.gz
+
+      - name: Push database to OCI registry
+        run: |
+          ./bin/taco-vulndb push "$VULNDB_OCI_REF:$DATE_TAG"
+          ./bin/taco-vulndb push "$VULNDB_OCI_REF:latest"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add vulndb/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update vulnerability database $DATE_TAG"
+            git push
+          fi
+
+      - name: Upload DB as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: vulndb-${{ env.DATE_TAG }}
+          path: |
+            vulndb/vulndb.json.gz
+            vulndb/meta.json
+          retention-days: 30
+
+  build-container:
+    needs: build-db
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set tags
+        run: |
+          echo "DATE_TAG=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+          echo "VULNDB_OCI_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push vulndb container
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.vulndb
+          push: true
+          build-args: |
+            PREV_DB_IMAGE=${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
+            TACO_NVD_API_KEY=${{ secrets.NVD_API_KEY }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          tags: |
+            ${{ env.VULNDB_OCI_REF }}/vulndb-container:latest
+            ${{ env.VULNDB_OCI_REF }}/vulndb-container:${{ env.DATE_TAG }}
