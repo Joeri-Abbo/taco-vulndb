@@ -4,3 +4,4 @@ coverage.out
 .taco/
 dist/
 .claude/
+vulndb/
