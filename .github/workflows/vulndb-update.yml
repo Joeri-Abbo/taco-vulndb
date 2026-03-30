@@ -103,7 +103,7 @@ jobs:
           echo "VULNDB_OCI_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Download DB artifacts from build-db
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: vulndb-${{ env.DATE_TAG }}
           path: vulndb/
